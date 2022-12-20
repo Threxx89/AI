@@ -1,0 +1,1 @@
+pip install gym-super-mario-bros==7.4.0
