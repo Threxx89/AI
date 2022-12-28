@@ -439,7 +439,9 @@ mario = Mario(state_dim=(4, 84, 84), action_dim=env.action_space.n, save_dir=sav
 
 logger = MetricLogger(save_dir)
 
-episodes = 10
+mario.net = torch.load("save_dir")
+mario.net.eval()
+episodes = 21
 for e in range(episodes):
 
     state = env.reset()
@@ -470,6 +472,6 @@ for e in range(episodes):
             break
 
     logger.log_episode()
-
+    torch.save(mario.net,"save_dir")
     if e % 20 == 0:
         logger.record(episode=e, epsilon=mario.exploration_rate, step=mario.curr_step)
