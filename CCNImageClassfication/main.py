@@ -99,3 +99,74 @@ if CUDA:
 
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+# Training the CNN
+num_epochs = 10
+
+training_loss = []
+training_accuracy = []
+test_loss = []
+test_accuracy = []
+
+for epoch in range(num_epochs):
+    correct_prediction = 0
+    iterations = 0
+    iter_loss = 0.0
+
+    # Only do this when using dropout and batch normalization
+    model.train()
+    # Train model
+    for i, (inputs, labels) in enumerate(train_loader):
+
+        if CUDA:
+            inputs = inputs.cuda()
+            labels = labels.cuda()
+
+        # forward propagation CCN don't require forward method to be called
+        outputs = model(inputs)
+        loss = loss_fn(outputs, labels)
+        iter_loss += loss.item()
+
+        # back propagation
+        # clearing gradiant
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        # calculate accuracy
+        _, predict = torch.max(outputs, 1)
+        correct_prediction += (predict == labels).sum().item()
+        iterations += 1
+
+    training_loss.append(iter_loss / iterations)
+    training_accuracy.append(correct_prediction / len(train_dataset))
+
+    # Test Model
+    correct_prediction = 0
+    iterations = 0
+    test_loss = 0.0
+
+    model.eval()
+    for i, (inputs, labels) in enumerate(test_loader):
+
+        if CUDA:
+            inputs = inputs.cuda()
+            labels = labels.cuda()
+
+            # forward propagation CCN don't require forward method to be called
+        outputs = model(inputs)
+        loss = loss_fn(outputs, labels)
+        test_loss += loss.item()
+
+        # calculate accuracy
+        _, predict = torch.max(outputs, 1)
+        correct_prediction += (predict == labels).sum().item()
+        iterations += 1
+
+    test_loss.append(test_loss / iterations)
+    test_accuracy.append(correct_prediction / len(test_dataset))
+
+    # Print statistics
+    print("Epoch {}/{},Train Loss: {:.3f}, Train Accuracy: {:.3f}".format(epoch + 1, num_epochs, training_loss[-1], training_accuracy[-1]))
+    # Print statistics
+    print("Epoch {}/{},Test Loss: {:.3f}, Test Accuracy: {:.3f}".format(epoch + 1, num_epochs, test_loss[-1], test_accuracy[-1]))
