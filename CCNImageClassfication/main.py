@@ -103,13 +103,13 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 # Training the CNN
 num_epochs = 10
 
-training_loss = []
-training_accuracy = []
+train_loss = []
+train_accuracy = []
 test_loss = []
 test_accuracy = []
 
 for epoch in range(num_epochs):
-    correct_prediction = 0
+    correct = 0
     iterations = 0
     iter_loss = 0.0
 
@@ -135,38 +135,70 @@ for epoch in range(num_epochs):
 
         # calculate accuracy
         _, predict = torch.max(outputs, 1)
-        correct_prediction += (predict == labels).sum().item()
+        correct += (predict == labels).sum().item()
         iterations += 1
 
-    training_loss.append(iter_loss / iterations)
-    training_accuracy.append(correct_prediction / len(train_dataset))
+    # Record the training loss
+    train_loss.append(iter_loss/iterations)
+    # Record the training accuracy
+    train_accuracy.append((100 * correct / len(train_dataset)))
 
     # Test Model
-    correct_prediction = 0
+    testing_loss = 0.0
+    correct = 0
     iterations = 0
-    test_loss = 0.0
 
-    model.eval()
+    model.eval()                    # Put the network into evaluation mode
+
     for i, (inputs, labels) in enumerate(test_loader):
 
         if CUDA:
             inputs = inputs.cuda()
             labels = labels.cuda()
 
-            # forward propagation CCN don't require forward method to be called
         outputs = model(inputs)
-        loss = loss_fn(outputs, labels)
-        test_loss += loss.item()
+        loss = loss_fn(outputs, labels) # Calculate the loss
+        testing_loss += loss.item()
+        # Record the correct predictions for training data
+        _, predicted = torch.max(outputs, 1)
+        correct += (predicted == labels).sum()
 
-        # calculate accuracy
-        _, predict = torch.max(outputs, 1)
-        correct_prediction += (predict == labels).sum().item()
         iterations += 1
 
-    test_loss.append(test_loss / iterations)
-    test_accuracy.append(correct_prediction / len(test_dataset))
+    # Record the Testing loss
+    test_loss.append(testing_loss/iterations)
+    # Record the Testing accuracy
+    test_accuracy.append((100 * correct / len(test_dataset)))
 
     # Print statistics
-    print("Epoch {}/{},Train Loss: {:.3f}, Train Accuracy: {:.3f}".format(epoch + 1, num_epochs, training_loss[-1], training_accuracy[-1]))
-    # Print statistics
-    print("Epoch {}/{},Test Loss: {:.3f}, Test Accuracy: {:.3f}".format(epoch + 1, num_epochs, test_loss[-1], test_accuracy[-1]))
+    print ('Epoch {}/{}, Training Loss: {:.3f}, Training Accuracy: {:.3f}, Testing Loss: {:.3f}, Testing Acc: {:.3f}'
+           .format(epoch+1, num_epochs, train_loss[-1], train_accuracy[-1],
+                   test_loss[-1], test_accuracy[-1]))
+
+# Loss
+f =  plt.figure(figsize=(10,10))
+plt.plot(train_loss,labels= 'Training loss')
+plt.plot(test_loss ,labels= 'Training loss')
+plt.legend()
+plt.show()
+
+# Accuracy
+f =  plt.figure(figsize=(10,10))
+plt.plot(train_accuracy,labels= 'Training Accuracy')
+plt.plot(test_accuracy ,labels= 'Training Accuracy')
+plt.legend()
+plt.show()
+
+img = test_dataset[30][0].resize_((1, 1, 28, 28))   #(batch_size,channels,height,width)
+label = test_dataset[30][1]
+
+model.eval()
+
+if CUDA:
+    model = model.cuda()
+    img = img.cuda()
+
+output = model(img)
+_, predicted = torch.max(output,1)
+print("Prediction is: {}".format(predicted.item()))
+print("Actual is: {}".format(label))
